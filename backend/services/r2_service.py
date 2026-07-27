@@ -3,25 +3,50 @@ import boto3
 
 from dotenv import load_dotenv
 
+# ==========================================
+# CARREGA VARIÁVEIS DE AMBIENTE
+# ==========================================
+
 load_dotenv()
 
-ACCOUNT_ID = os.getenv("7eeaf013daeb98306d3ec8a7a6810983")
-ACCESS_KEY = os.getenv("ce59cafbd16bf84385b4f56332e53f7c")
-SECRET_KEY = os.getenv("ab390ba95abecb33e75f5d3b8c323fff80fbf401aef0d280ef2637551700beec")
-BUCKET = os.getenv("gestor-haras-documentos")
-PUBLIC_URL = os.getenv("https://pub-0183482dc8464927b3051ac235ffad6f.r2.dev")
+ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
+ACCESS_KEY = os.getenv("R2_ACCESS_KEY")
+SECRET_KEY = os.getenv("R2_SECRET_KEY")
+BUCKET = os.getenv("R2_BUCKET")
+PUBLIC_URL = os.getenv("R2_PUBLIC_URL")
 
+
+# ==========================================
+# VALIDA CONFIGURAÇÕES
+# ==========================================
+
+def _validar_configuracao():
+    faltando = []
+
+    if not ACCOUNT_ID:
+        faltando.append("R2_ACCOUNT_ID")
+
+    if not ACCESS_KEY:
+        faltando.append("R2_ACCESS_KEY")
+
+    if not SECRET_KEY:
+        faltando.append("R2_SECRET_KEY")
+
+    if not BUCKET:
+        faltando.append("R2_BUCKET")
+
+    if faltando:
+        raise Exception(
+            f"Variáveis do Cloudflare R2 não configuradas: {', '.join(faltando)}"
+        )
+
+
+# ==========================================
+# CRIA CLIENTE R2
+# ==========================================
 
 def _criar_cliente():
-    if not all([
-        ACCOUNT_ID,
-        ACCESS_KEY,
-        SECRET_KEY,
-        BUCKET,
-    ]):
-        raise Exception(
-            "Variáveis do Cloudflare R2 não configuradas"
-        )
+    _validar_configuracao()
 
     return boto3.client(
         "s3",
@@ -37,38 +62,60 @@ def _criar_cliente():
 client = _criar_cliente()
 
 
+# ==========================================
+# UPLOAD DE ARQUIVO
+# ==========================================
+
 def upload_file(
     arquivo,
     nome,
     content_type="application/octet-stream",
 ):
     """
-    Envia arquivo para Cloudflare R2
+    Envia arquivo para Cloudflare R2.
 
-    arquivo:
-        objeto BytesIO ou arquivo aberto
+    Parâmetros:
+        arquivo:
+            BytesIO ou arquivo aberto
 
-    nome:
-        caminho dentro do bucket
+        nome:
+            caminho dentro do bucket
 
-    content_type:
-        MIME Type do arquivo
+        content_type:
+            MIME Type
     """
 
-    arquivo.seek(0)
+    try:
+        arquivo.seek(0)
 
-    client.upload_fileobj(
-        arquivo,
-        BUCKET,
-        nome,
-        ExtraArgs={
-            "ContentType": content_type
-        },
-    )
+        client.upload_fileobj(
+            arquivo,
+            BUCKET,
+            nome,
+            ExtraArgs={
+                "ContentType": content_type
+            },
+        )
 
-    if PUBLIC_URL:
-        return f"{PUBLIC_URL}/{nome}"
+        if PUBLIC_URL:
+            return f"{PUBLIC_URL}/{nome}"
 
-    return (
-        f"https://{BUCKET}.{ACCOUNT_ID}.r2.cloudflarestorage.com/{nome}"
-    )
+        return (
+            f"https://{BUCKET}.{ACCOUNT_ID}.r2.cloudflarestorage.com/{nome}"
+        )
+
+    except Exception as e:
+        raise Exception(
+            f"Erro ao enviar arquivo para Cloudflare R2: {str(e)}"
+        )
+
+
+# ==========================================
+# TESTE LOCAL
+# ==========================================
+
+if __name__ == "__main__":
+    print("R2_ACCOUNT_ID:", ACCOUNT_ID)
+    print("R2_BUCKET:", BUCKET)
+    print("R2_PUBLIC_URL:", PUBLIC_URL)
+    print("Cloudflare R2 configurado com sucesso.")
