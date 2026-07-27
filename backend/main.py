@@ -1,205 +1,419 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    UploadFile,
+    File,
+    Form,
+)
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from io import BytesIO
 
+import uuid
+
+
 from backend.services.pdf_service import gerar_pdf
+
 from backend.services.r2_service import upload_file
 
 
+
+
+
+# =====================================================
+# APP
+# =====================================================
+
+
 app = FastAPI(
+
     title="Gestor Haras API",
+
     version="1.0.0"
+
 )
 
 
-# =====================================
-# CORS - PERMITIR FLUTTER WEB
-# =====================================
+
+
+
+
+
+# =====================================================
+# CORS - FLUTTER WEB
+# =====================================================
+
 
 app.add_middleware(
+
+
     CORSMiddleware,
 
+
     allow_origins=[
+
         "*"
+
     ],
 
-    allow_credentials=True,
+
+    allow_credentials=False,
+
 
     allow_methods=[
+
         "*"
+
     ],
 
+
     allow_headers=[
+
         "*"
+
     ],
+
+
 )
 
 
 
-# =====================================
+
+
+
+
+
+# =====================================================
 # TESTE API
-# =====================================
+# =====================================================
+
 
 @app.get("/")
+
 def home():
 
+
     return {
-        "status": "ok",
-        "api": "Gestor Haras"
+
+
+        "status":
+
+            "ok",
+
+
+        "api":
+
+            "Gestor Haras",
+
+
+        "storage":
+
+            "cloudflare_r2"
+
+
     }
 
 
 
 
-# =====================================
-# GERAR CONTRATO PDF
-# =====================================
 
-@app.post("/gerar_contrato")
-async def gerar_contrato(
-    dados: dict
+
+
+
+
+# =====================================================
+# STATUS UPLOAD
+# =====================================================
+
+
+@app.get("/api/upload")
+
+def upload_status():
+
+
+    return {
+
+
+        "status":
+
+            "online",
+
+
+        "servico":
+
+            "upload",
+
+
+        "storage":
+
+            "cloudflare_r2"
+
+
+    }
+
+
+
+
+
+
+
+
+
+# =====================================================
+# UPLOAD ARQUIVOS R2
+# =====================================================
+
+
+@app.post("/api/upload")
+
+async def upload(
+
+
+    file:
+
+        UploadFile = File(...),
+
+
+
+    pasta:
+
+        str = Form("documentos"),
+
+
 ):
+
 
     try:
 
 
-        proposta_id = dados.get(
-            "proposta_id",
-            "sem_id"
-        )
 
-
-        cliente = dados.get(
-            "cliente",
-            ""
-        )
-
-
-        valor = dados.get(
-            "valor",
-            0
-        )
-
-
-        parcelas = dados.get(
-            "parcelas",
-            1
-        )
-
-
-        cpf_cnpj = dados.get(
-            "cpf_cnpj",
-            ""
-        )
-
-
-        endereco = dados.get(
-            "endereco",
-            ""
-        )
-
-
-        cidade = dados.get(
-            "cidade",
-            ""
+        print(
+            "UPLOAD RECEBIDO:",
+            file.filename
         )
 
 
 
-        if not cliente:
 
-            raise Exception(
-                "Cliente não informado"
+        if not file.filename:
+
+
+            raise HTTPException(
+
+
+                status_code=400,
+
+
+                detail="Arquivo não informado"
+
+
             )
 
 
 
-        # =============================
-        # GERAR PDF
-        # =============================
 
-        pdf_bytes = gerar_pdf(
 
-            cliente,
 
-            valor,
 
-            parcelas,
+        extensao = ""
 
-            cpf_cnpj,
 
-            endereco,
 
-            cidade,
+        if "." in file.filename:
+
+
+            extensao = (
+
+
+                "."
+
+
+                +
+
+
+                file.filename
+
+                .split(".")
+
+                [-1]
+
+                .lower()
+
+
+            )
+
+
+
+
+
+
+
+        nome = (
+
+
+
+            f"{pasta}/"
+
+
+
+            f"{uuid.uuid4()}"
+
+
+
+            f"{extensao}"
+
+
 
         )
 
 
 
-        if not pdf_bytes:
 
-            raise Exception(
-                "PDF vazio"
+
+
+
+
+        conteudo = await file.read()
+
+
+
+
+
+
+        if not conteudo:
+
+
+            raise HTTPException(
+
+
+                status_code=400,
+
+
+                detail="Arquivo vazio"
+
+
             )
+
+
+
+
+
 
 
 
         arquivo = BytesIO(
-            pdf_bytes
+
+
+            conteudo
+
+
         )
+
 
 
         arquivo.seek(0)
 
 
 
-        # =============================
-        # SALVAR NO R2
-        # =============================
 
-        nome_arquivo = (
 
-            "contratos/"
-            "original/"
-            f"contrato_{proposta_id}.pdf"
-
-        )
 
 
 
         url = upload_file(
 
-            arquivo=arquivo,
 
-            nome=nome_arquivo,
 
-            content_type="application/pdf"
+            arquivo=
+
+                arquivo,
+
+
+
+            nome=
+
+                nome,
+
+
+
+            content_type=(
+
+
+
+                file.content_type
+
+
+
+                or
+
+
+
+                "application/octet-stream"
+
+
+
+            ),
+
 
         )
 
 
 
-        # =============================
-        # RETORNO PARA FLUTTER
-        # =============================
+
+
+
+
+
+        print(
+
+            "SALVO R2:",
+
+            url
+
+        )
+
+
+
+
+
+
+
 
         return {
 
 
-            "sucesso": True,
+            "sucesso":
+
+                True,
 
 
-            "contratoPdfUrl": url,
+
+            "arquivo":
+
+                nome,
 
 
-            "arquivo": nome_arquivo,
 
+            "url":
 
-            "tipo": "contrato_original"
+                url,
 
 
         }
+
+
+
+
+
+
+    except HTTPException:
+
+
+        raise
+
+
+
 
 
 
@@ -207,15 +421,408 @@ async def gerar_contrato(
 
 
         print(
-            "ERRO GERAR CONTRATO:",
+
+
+            "ERRO UPLOAD:",
+
             e
+
+
         )
+
 
 
         raise HTTPException(
 
+
             status_code=500,
+
 
             detail=str(e)
 
+
         )
+# =====================================================
+# GERAR CONTRATO PDF
+# =====================================================
+
+
+@app.post("/gerar_contrato")
+
+async def gerar_contrato(
+
+    dados: dict
+
+):
+
+
+    try:
+
+
+
+        proposta_id = dados.get(
+
+            "proposta_id",
+
+            "sem_id"
+
+        )
+
+
+
+
+
+        cliente = dados.get(
+
+            "cliente",
+
+            ""
+
+        )
+
+
+
+
+
+        valor = dados.get(
+
+            "valor",
+
+            0
+
+        )
+
+
+
+
+
+        parcelas = dados.get(
+
+            "parcelas",
+
+            1
+
+        )
+
+
+
+
+
+        cpf_cnpj = dados.get(
+
+            "cpf_cnpj",
+
+            ""
+
+        )
+
+
+
+
+
+        endereco = dados.get(
+
+            "endereco",
+
+            ""
+
+        )
+
+
+
+
+
+        cidade = dados.get(
+
+            "cidade",
+
+            ""
+
+        )
+
+
+
+
+
+
+
+
+
+        if not cliente:
+
+
+            raise Exception(
+
+                "Cliente não informado"
+
+            )
+
+
+
+
+
+
+
+
+
+        # =============================
+        # GERAR PDF
+        # =============================
+
+
+        pdf_bytes = gerar_pdf(
+
+
+
+            cliente,
+
+
+
+            valor,
+
+
+
+            parcelas,
+
+
+
+            cpf_cnpj,
+
+
+
+            endereco,
+
+
+
+            cidade,
+
+
+
+        )
+
+
+
+
+
+
+
+
+
+        if not pdf_bytes:
+
+
+
+            raise Exception(
+
+                "PDF vazio"
+
+            )
+
+
+
+
+
+
+
+
+
+        arquivo = BytesIO(
+
+
+
+            pdf_bytes
+
+
+
+        )
+
+
+
+
+
+        arquivo.seek(0)
+
+
+
+
+
+
+
+
+
+        # =============================
+        # SALVAR PDF NO R2
+        # =============================
+
+
+        nome_arquivo = (
+
+
+
+            "contratos/"
+
+
+
+            "original/"
+
+
+
+            f"contrato_{proposta_id}.pdf"
+
+
+
+        )
+
+
+
+
+
+
+
+
+
+        url = upload_file(
+
+
+
+            arquivo=arquivo,
+
+
+
+            nome=nome_arquivo,
+
+
+
+            content_type="application/pdf"
+
+
+
+        )
+
+
+
+
+
+
+
+
+
+        return {
+
+
+
+            "sucesso":
+
+                True,
+
+
+
+            "contratoPdfUrl":
+
+                url,
+
+
+
+            "arquivo":
+
+                nome_arquivo,
+
+
+
+            "tipo":
+
+                "contrato_original"
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+    except Exception as e:
+
+
+
+        print(
+
+
+
+            "ERRO GERAR CONTRATO:",
+
+
+
+            e
+
+
+
+        )
+
+
+
+
+
+        raise HTTPException(
+
+
+
+            status_code=500,
+
+
+
+            detail=str(e)
+
+
+
+        )
+
+
+
+
+
+
+
+
+
+# =====================================================
+# DELETE ARQUIVO (FUTURO)
+# =====================================================
+
+
+@app.delete("/api/upload")
+
+async def excluir_upload(
+
+    url: str
+
+):
+
+
+    return {
+
+
+
+        "sucesso":
+
+            False,
+
+
+
+        "mensagem":
+
+            "Exclusão ainda não implementada",
+
+
+
+        "url":
+
+            url
+
+
+
+    }
