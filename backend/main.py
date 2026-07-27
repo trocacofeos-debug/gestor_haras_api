@@ -51,7 +51,9 @@ app = FastAPI(
 
 app.add_middleware(
 
+
     CORSMiddleware,
+
 
     allow_origins=[
 
@@ -59,7 +61,9 @@ app.add_middleware(
 
     ],
 
+
     allow_credentials=False,
+
 
     allow_methods=[
 
@@ -67,11 +71,13 @@ app.add_middleware(
 
     ],
 
+
     allow_headers=[
 
         "*"
 
     ],
+
 
 )
 
@@ -122,7 +128,40 @@ def home():
 
 
 # =====================================================
-# TESTE UPLOAD
+# HEALTH CHECK
+# =====================================================
+
+
+@app.get("/health")
+
+def health():
+
+
+    return {
+
+
+        "online":
+
+            True,
+
+
+        "servico":
+
+            "Gestor Haras API"
+
+
+    }
+
+
+
+
+
+
+
+
+
+# =====================================================
+# STATUS UPLOAD
 # =====================================================
 
 
@@ -169,9 +208,11 @@ def upload_status():
 
 async def upload(
 
+
     file:
 
         UploadFile = File(...),
+
 
 
     pasta:
@@ -185,7 +226,6 @@ async def upload(
     try:
 
 
-
         print(
 
             "UPLOAD RECEBIDO:",
@@ -193,6 +233,7 @@ async def upload(
             file.filename
 
         )
+
 
 
 
@@ -207,6 +248,7 @@ async def upload(
                 detail="Arquivo não informado"
 
             )
+
 
 
 
@@ -242,6 +284,7 @@ async def upload(
 
 
 
+
         nome = (
 
             f"{pasta}/"
@@ -257,7 +300,10 @@ async def upload(
 
 
 
+
+
         conteudo = await file.read()
+
 
 
 
@@ -279,6 +325,7 @@ async def upload(
 
 
 
+
         arquivo = BytesIO(
 
             conteudo
@@ -287,6 +334,8 @@ async def upload(
 
 
         arquivo.seek(0)
+
+
 
 
 
@@ -317,12 +366,12 @@ async def upload(
                 "application/octet-stream"
 
 
-
             )
 
 
-
         )
+
+
 
 
 
@@ -336,6 +385,10 @@ async def upload(
             url
 
         )
+
+
+
+
 
 
 
@@ -359,7 +412,9 @@ async def upload(
                 url
 
 
+
         }
+
 
 
 
@@ -375,8 +430,8 @@ async def upload(
 
 
 
-    except Exception as e:
 
+    except Exception as e:
 
 
         print(
@@ -411,7 +466,6 @@ async def gerar_contrato(
 
 
     try:
-
 
 
         proposta_id = dados.get(
@@ -504,31 +558,34 @@ async def gerar_contrato(
 
 
 
-
-        # ==============================
+        # =====================================
         # GERAR PDF
-        # ==============================
+        # =====================================
 
 
         pdf_bytes = gerar_pdf(
 
 
-
             cliente,
+
 
             valor,
 
+
             parcelas,
+
 
             cpf_cnpj,
 
+
             endereco,
+
 
             cidade
 
 
-
         )
+
 
 
 
@@ -543,6 +600,7 @@ async def gerar_contrato(
                 "PDF vazio"
 
             )
+
 
 
 
@@ -567,9 +625,9 @@ async def gerar_contrato(
 
 
 
-        # ==============================
-        # SALVAR ORIGINAL NO R2
-        # ==============================
+        # =====================================
+        # SALVAR CONTRATO ORIGINAL NO R2
+        # =====================================
 
 
         nome_arquivo = (
@@ -627,6 +685,8 @@ async def gerar_contrato(
 
 
 
+
+
         return {
 
 
@@ -663,10 +723,7 @@ async def gerar_contrato(
 
 
 
-
-
     except Exception as e:
-
 
 
         print(
@@ -678,23 +735,16 @@ async def gerar_contrato(
         )
 
 
-
         raise HTTPException(
-
 
 
             status_code=500,
 
+
             detail=str(e)
 
 
-
         )
-
-
-
-
-
 
 
 
@@ -726,12 +776,10 @@ async def upload_contrato_assinado(
         UploadFile = File(...),
 
 
-
 ):
 
 
     try:
-
 
 
 
@@ -754,14 +802,12 @@ async def upload_contrato_assinado(
 
             raise HTTPException(
 
-
                 status_code=400,
-
 
                 detail="Arquivo não informado"
 
-
             )
+
 
 
 
@@ -781,12 +827,9 @@ async def upload_contrato_assinado(
 
             raise HTTPException(
 
-
                 status_code=400,
 
-
                 detail="Arquivo vazio"
-
 
             )
 
@@ -815,8 +858,12 @@ async def upload_contrato_assinado(
 
 
 
-        nome_arquivo = (
+        # =====================================
+        # CAMINHO CONTRATO ASSINADO
+        # =====================================
 
+
+        nome_arquivo = (
 
             "contratos/"
 
@@ -824,9 +871,8 @@ async def upload_contrato_assinado(
 
             f"contrato_{proposta_id}_assinado.pdf"
 
-
-
         )
+
 
 
 
@@ -937,17 +983,24 @@ async def upload_contrato_assinado(
         raise HTTPException(
 
 
-
             status_code=500,
+
 
             detail=str(e)
 
 
-
         )
 
-    # =====================================================
-# CONSULTAR ARQUIVO (OPCIONAL)
+
+
+
+
+
+
+
+
+# =====================================================
+# CONSULTAR ARQUIVO
 # =====================================================
 
 
@@ -955,7 +1008,9 @@ async def upload_contrato_assinado(
 
 async def consultar_arquivo(
 
+
     url: str = Query(...)
+
 
 ):
 
@@ -970,14 +1025,6 @@ async def consultar_arquivo(
 
     }
 
-
-
-
-
-
-
-
-
 # =====================================================
 # DELETE ARQUIVO R2
 # FUTURO
@@ -989,18 +1036,15 @@ async def consultar_arquivo(
 async def excluir_upload(
 
 
-    url: str = Query(...)
+    url:
+
+        str = Query(...)
 
 
 ):
 
 
     try:
-
-
-
-        # Aqui depois pode chamar
-        # delete_object do Cloudflare R2
 
 
 
@@ -1017,12 +1061,23 @@ async def excluir_upload(
 
 
 
+
+        # FUTURO:
+        # implementar delete_object no R2
+
+
+
+
+
+
+
         return {
 
 
             "sucesso":
 
                 False,
+
 
 
             "mensagem":
@@ -1038,6 +1093,8 @@ async def excluir_upload(
 
 
         }
+
+
 
 
 
@@ -1067,7 +1124,7 @@ async def excluir_upload(
 
 
 # =====================================================
-# TRATAMENTO ERRO GLOBAL
+# ERRO GLOBAL
 # =====================================================
 
 
@@ -1075,9 +1132,12 @@ async def excluir_upload(
 
 async def erro_global(
 
+
     request,
 
+
     exc
+
 
 ):
 
@@ -1092,18 +1152,26 @@ async def erro_global(
 
 
 
+
+
+
+
     return JSONResponse(
+
 
 
         status_code=500,
 
 
+
         content={
+
 
 
             "sucesso":
 
                 False,
+
 
 
             "erro":
