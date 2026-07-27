@@ -7,6 +7,8 @@ from fastapi import (
     Query,
 )
 
+from backend.services.pdf_assinatura_service import gerar_contrato_assinado
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import JSONResponse
@@ -23,12 +25,9 @@ from backend.services.r2_service import upload_file
 
 
 
-
-
 # =====================================================
 # APP
 # =====================================================
-
 
 app = FastAPI(
 
@@ -42,48 +41,29 @@ app = FastAPI(
 
 
 
-
-
 # =====================================================
 # CORS
 # =====================================================
 
-
 app.add_middleware(
-
 
     CORSMiddleware,
 
-
     allow_origins=[
-
         "*"
-
     ],
-
 
     allow_credentials=False,
 
-
     allow_methods=[
-
         "*"
-
     ],
-
 
     allow_headers=[
-
         "*"
-
     ],
 
-
 )
-
-
-
-
 
 
 
@@ -93,35 +73,21 @@ app.add_middleware(
 # HOME
 # =====================================================
 
-
 @app.get("/")
-
 def home():
-
 
     return {
 
-
         "status":
-
             "ok",
 
-
         "api":
-
             "Gestor Haras",
 
-
         "storage":
-
             "cloudflare_r2"
 
-
     }
-
-
-
-
 
 
 
@@ -131,30 +97,18 @@ def home():
 # HEALTH CHECK
 # =====================================================
 
-
 @app.get("/health")
-
 def health():
-
 
     return {
 
-
         "online":
-
             True,
 
-
         "servico":
-
             "Gestor Haras API"
 
-
     }
-
-
-
-
 
 
 
@@ -164,35 +118,21 @@ def health():
 # STATUS UPLOAD
 # =====================================================
 
-
 @app.get("/api/upload")
-
 def upload_status():
-
 
     return {
 
-
         "status":
-
             "online",
 
-
         "servico":
-
             "upload",
 
-
         "storage":
-
             "cloudflare_r2"
 
-
     }
-
-
-
-
 
 
 
@@ -203,22 +143,15 @@ def upload_status():
 # DOCUMENTOS / IMAGENS
 # =====================================================
 
-
 @app.post("/api/upload")
-
 async def upload(
 
-
     file:
-
         UploadFile = File(...),
 
 
-
     pasta:
-
         str = Form("documentos"),
-
 
 ):
 
@@ -227,14 +160,9 @@ async def upload(
 
 
         print(
-
             "UPLOAD RECEBIDO:",
-
             file.filename
-
         )
-
-
 
 
 
@@ -253,10 +181,7 @@ async def upload(
 
 
 
-
-
         extensao = ""
-
 
 
         if "." in file.filename:
@@ -282,9 +207,6 @@ async def upload(
 
 
 
-
-
-
         nome = (
 
             f"{pasta}/"
@@ -299,11 +221,7 @@ async def upload(
 
 
 
-
-
-
         conteudo = await file.read()
-
 
 
 
@@ -323,9 +241,6 @@ async def upload(
 
 
 
-
-
-
         arquivo = BytesIO(
 
             conteudo
@@ -339,25 +254,13 @@ async def upload(
 
 
 
-
-
-
-
         url = upload_file(
-
-
 
             arquivo=arquivo,
 
-
-
             nome=nome,
 
-
-
             content_type=(
-
-
 
                 file.content_type
 
@@ -365,14 +268,9 @@ async def upload(
 
                 "application/octet-stream"
 
-
             )
 
-
         )
-
-
-
 
 
 
@@ -385,10 +283,6 @@ async def upload(
             url
 
         )
-
-
-
-
 
 
 
@@ -412,10 +306,7 @@ async def upload(
                 url
 
 
-
         }
-
-
 
 
 
@@ -425,7 +316,6 @@ async def upload(
 
 
         raise
-
 
 
 
@@ -451,10 +341,16 @@ async def upload(
 
         )
 
-    # =====================================================
+
+
+
+
+
+
+
+# =====================================================
 # GERAR CONTRATO ORIGINAL PDF
 # =====================================================
-
 
 @app.post("/gerar_contrato")
 
@@ -477,7 +373,6 @@ async def gerar_contrato(
         )
 
 
-
         cliente = dados.get(
 
             "cliente",
@@ -485,7 +380,6 @@ async def gerar_contrato(
             ""
 
         )
-
 
 
         valor = dados.get(
@@ -497,7 +391,6 @@ async def gerar_contrato(
         )
 
 
-
         parcelas = dados.get(
 
             "parcelas",
@@ -505,7 +398,6 @@ async def gerar_contrato(
             1
 
         )
-
 
 
         cpf_cnpj = dados.get(
@@ -517,7 +409,6 @@ async def gerar_contrato(
         )
 
 
-
         endereco = dados.get(
 
             "endereco",
@@ -527,7 +418,6 @@ async def gerar_contrato(
         )
 
 
-
         cidade = dados.get(
 
             "cidade",
@@ -535,8 +425,6 @@ async def gerar_contrato(
             ""
 
         )
-
-
 
 
 
@@ -555,38 +443,23 @@ async def gerar_contrato(
 
 
 
-
-
-
-        # =====================================
-        # GERAR PDF
-        # =====================================
-
-
         pdf_bytes = gerar_pdf(
 
 
             cliente,
 
-
             valor,
-
 
             parcelas,
 
-
             cpf_cnpj,
 
-
             endereco,
-
 
             cidade
 
 
         )
-
-
 
 
 
@@ -605,9 +478,6 @@ async def gerar_contrato(
 
 
 
-
-
-
         arquivo = BytesIO(
 
             pdf_bytes
@@ -619,15 +489,6 @@ async def gerar_contrato(
 
 
 
-
-
-
-
-
-
-        # =====================================
-        # SALVAR CONTRATO ORIGINAL NO R2
-        # =====================================
 
 
         nome_arquivo = (
@@ -644,28 +505,15 @@ async def gerar_contrato(
 
 
 
-
-
         url = upload_file(
-
-
 
             arquivo=arquivo,
 
-
-
             nome=nome_arquivo,
-
-
 
             content_type="application/pdf"
 
-
-
         )
-
-
-
 
 
 
@@ -683,12 +531,7 @@ async def gerar_contrato(
 
 
 
-
-
-
-
         return {
-
 
 
             "sucesso":
@@ -696,11 +539,9 @@ async def gerar_contrato(
                 True,
 
 
-
             "contratoPdfUrl":
 
                 url,
-
 
 
             "arquivo":
@@ -708,16 +549,12 @@ async def gerar_contrato(
                 nome_arquivo,
 
 
-
             "tipo":
 
                 "contrato_original"
 
 
-
         }
-
-
 
 
 
@@ -737,35 +574,29 @@ async def gerar_contrato(
 
         raise HTTPException(
 
-
             status_code=500,
-
 
             detail=str(e)
 
-
         )
 
-
-
-
-
-
-
-
-
+    # =====================================================
+# GERAR CONTRATO ASSINADO
+# CONTRATO ORIGINAL + ASSINATURA
 # =====================================================
-# UPLOAD CONTRATO ASSINADO
-# =====================================================
-
 
 @app.post("/upload_contrato_assinado")
 
 async def upload_contrato_assinado(
 
 
-
     proposta_id:
+
+        str = Form(...),
+
+
+
+    contrato_url:
 
         str = Form(...),
 
@@ -782,16 +613,13 @@ async def upload_contrato_assinado(
     try:
 
 
-
         print(
 
-            "CONTRATO ASSINADO RECEBIDO:",
+            "ASSINATURA RECEBIDA:",
 
             file.filename
 
         )
-
-
 
 
 
@@ -804,7 +632,7 @@ async def upload_contrato_assinado(
 
                 status_code=400,
 
-                detail="Arquivo não informado"
+                detail="Assinatura não informada"
 
             )
 
@@ -814,26 +642,58 @@ async def upload_contrato_assinado(
 
 
 
-
-        conteudo = await file.read()
-
+        assinatura_bytes = await file.read()
 
 
 
 
 
-        if not conteudo:
+        if not assinatura_bytes:
 
 
             raise HTTPException(
 
                 status_code=400,
 
-                detail="Arquivo vazio"
+                detail="Arquivo assinatura vazio"
 
             )
 
 
+
+
+
+
+
+        # =====================================
+        # GERAR PDF ASSINADO
+        # =====================================
+
+
+        pdf_final = gerar_contrato_assinado(
+
+            contrato_url,
+
+            assinatura_bytes,
+
+            proposta_id
+
+        )
+
+
+
+
+
+
+
+        if not pdf_final:
+
+
+            raise Exception(
+
+                "PDF assinado vazio"
+
+            )
 
 
 
@@ -843,7 +703,7 @@ async def upload_contrato_assinado(
 
         arquivo = BytesIO(
 
-            conteudo
+            pdf_final
 
         )
 
@@ -854,13 +714,6 @@ async def upload_contrato_assinado(
 
 
 
-
-
-
-
-        # =====================================
-        # CAMINHO CONTRATO ASSINADO
-        # =====================================
 
 
         nome_arquivo = (
@@ -879,27 +732,19 @@ async def upload_contrato_assinado(
 
 
 
-
-
         url = upload_file(
-
 
 
             arquivo=arquivo,
 
 
-
             nome=nome_arquivo,
-
 
 
             content_type="application/pdf"
 
 
-
         )
-
-
 
 
 
@@ -921,10 +766,7 @@ async def upload_contrato_assinado(
 
 
 
-
-
         return {
-
 
 
             "sucesso":
@@ -932,21 +774,22 @@ async def upload_contrato_assinado(
                 True,
 
 
-
             "contratoAssinadoUrl":
 
                 url,
 
 
-
             "arquivo":
 
-                nome_arquivo
+                nome_arquivo,
 
+
+            "tipo":
+
+                "contrato_assinado"
 
 
         }
-
 
 
 
@@ -963,11 +806,7 @@ async def upload_contrato_assinado(
 
 
 
-
-
-
     except Exception as e:
-
 
 
         print(
@@ -979,18 +818,13 @@ async def upload_contrato_assinado(
         )
 
 
-
         raise HTTPException(
-
 
             status_code=500,
 
-
             detail=str(e)
 
-
         )
-
 
 
 
@@ -1003,19 +837,25 @@ async def upload_contrato_assinado(
 # CONSULTAR ARQUIVO
 # =====================================================
 
-
 @app.get("/arquivo")
 
 async def consultar_arquivo(
 
 
-    url: str = Query(...)
+    url:
+
+        str = Query(...)
 
 
 ):
 
 
     return {
+
+
+        "sucesso":
+
+            True,
 
 
         "arquivo":
@@ -1025,11 +865,17 @@ async def consultar_arquivo(
 
     }
 
+
+
+
+
+
+
+
 # =====================================================
-# DELETE ARQUIVO R2
+# EXCLUIR ARQUIVO R2
 # FUTURO
 # =====================================================
-
 
 @app.delete("/api/upload")
 
@@ -1047,7 +893,6 @@ async def excluir_upload(
     try:
 
 
-
         print(
 
             "SOLICITAÇÃO DELETE:",
@@ -1055,18 +900,6 @@ async def excluir_upload(
             url
 
         )
-
-
-
-
-
-
-
-        # FUTURO:
-        # implementar delete_object no R2
-
-
-
 
 
 
@@ -1079,11 +912,9 @@ async def excluir_upload(
                 False,
 
 
-
             "mensagem":
 
                 "Exclusão ainda não implementada",
-
 
 
             "url":
@@ -1091,11 +922,7 @@ async def excluir_upload(
                 url
 
 
-
         }
-
-
-
 
 
 
@@ -1103,15 +930,11 @@ async def excluir_upload(
     except Exception as e:
 
 
-
         raise HTTPException(
-
 
             status_code=500,
 
-
             detail=str(e)
-
 
         )
 
@@ -1122,11 +945,9 @@ async def excluir_upload(
 
 
 
-
 # =====================================================
-# ERRO GLOBAL
+# TRATAMENTO GLOBAL DE ERRO
 # =====================================================
-
 
 @app.exception_handler(Exception)
 
@@ -1152,20 +973,13 @@ async def erro_global(
 
 
 
-
-
-
-
     return JSONResponse(
-
 
 
         status_code=500,
 
 
-
         content={
-
 
 
             "sucesso":
@@ -1173,14 +987,14 @@ async def erro_global(
                 False,
 
 
-
             "erro":
 
                 str(exc)
-
 
 
         }
 
 
     )
+
+    
